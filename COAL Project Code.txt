@@ -1,0 +1,411 @@
+TITLE MASM Scientific Calculator
+
+INCLUDE Irvine32.inc
+
+.data
+    ar byte 0dh,0ah,0
+    arr byte " !!!!!!!!------------ CALCULATOR ------------!!!!!!!!", 0dh,0ah,0
+    arr0 byte "***Select the operation you want to perform*** ", 0dh,0ah,0 
+
+    arr1 byte "Enter 1 for Addition", 0dh,0ah,0 
+    arr2 byte "Enter 2 for Subtraction", 0dh,0ah,0 
+    arr3 byte "Enter 3 for Multiplication", 0dh,0ah,0
+    arr4 byte "Enter 4 for Division", 0dh,0ah,0 
+    arr12 byte "Enter 6 for AND operation", 0dh,0ah,0 
+    arr13 byte "Enter 7 for OR operation", 0dh,0ah,0
+    arr19 byte "Enter 9 for XOR operation", 0dh,0ah,0 
+    arr15 byte "Enter 11 for Sine (sin) operation", 0dh,0ah,0
+    arr16 byte "Enter 12 for Cosine (cos) operation", 0dh,0ah,0
+    arr17 byte "Enter 13 for Tangent (tan) operation", 0dh,0ah,0
+    arr18 byte "Enter 14 for Logarithm (log base 10)", 0dh,0ah,0
+    arr20 byte "Enter 15 for Natural Logarithm (ln)", 0dh,0ah,0
+    arr24 byte "Enter 16 for Square", 0dh,0ah,0
+    arr25 byte "Enter 17 for Cube", 0dh,0ah,0
+    arr26 byte "Enter 18 for Square Root", 0dh,0ah,0
+    arr22 byte "Enter 10 to terminate", 0dh,0ah,0
+    arr8 byte "Enter your choice: ", 0dh,0ah,0
+
+    arr6 byte "Enter the number or angle in degrees: ", 0dh,0ah,0
+    arr23 byte "MATH ERROR!! Division by zero!", 0dh,0ah,0
+    arr9 byte "Invalid Choice!! ", 0dh,0ah,0
+    arr10 byte "Your answer is: ", 0
+
+    ln10    REAL4  3.32192809489 
+    deg_to_rad REAL4 0.0174533  
+    binaryBuffer byte 33 dup(?)
+    log10_const REAL4 2.303
+.code
+
+main PROC
+    call Clrscr
+choice:
+    ; Display the menu
+    mov edx, offset arr
+    call WriteString
+    mov edx, offset arr0
+    call WriteString
+    ; Display options
+    mov edx, offset arr1
+    call WriteString
+    mov edx, offset arr2
+    call WriteString
+    mov edx, offset arr3
+    call WriteString
+    mov edx, offset arr4
+    call WriteString
+    mov edx, offset arr12
+    call WriteString
+    mov edx, offset arr13
+    call WriteString
+    mov edx, offset arr19
+    call WriteString
+    mov edx, offset arr15
+    call WriteString
+    mov edx, offset arr16
+    call WriteString
+    mov edx, offset arr17
+    call WriteString
+    mov edx, offset arr18
+    call WriteString
+    mov edx, offset arr20
+    call WriteString
+    mov edx, offset arr24
+    call WriteString
+    mov edx, offset arr25
+    call WriteString
+    mov edx, offset arr26
+    call WriteString
+    mov edx, offset arr22
+    call WriteString
+    mov edx, offset arr8
+    call WriteString
+  
+    call ReadInt
+
+    cmp eax, 1
+    je add_operation
+    cmp eax, 2
+    je sub_operation
+    cmp eax, 3
+    je mul_operation
+    cmp eax, 4
+    je div_operation
+    cmp eax, 6
+    je and_operation
+    cmp eax, 7
+    je or_operation
+    cmp eax, 9
+    je xor_operation
+    cmp eax, 11
+    je sin_operation
+    cmp eax, 12
+    je cos_operation
+    cmp eax, 13
+    je tan_operation
+    cmp eax, 14
+    je log_operation
+    cmp eax, 15
+    je ln_operation
+    cmp eax, 16
+    je square_operation
+    cmp eax, 17
+    je cube_operation
+    cmp eax, 18
+    je square_root_operation
+    cmp eax, 10
+    je terminate
+    jmp invalid_choice
+
+
+add_operation:
+    call inputnums
+    mov eax, ebx
+    add eax, esi
+    call output_result
+    jmp choice
+
+sub_operation:
+    call inputnums
+    mov eax, ebx
+    sub eax, esi
+    call output_result
+    jmp choice
+
+mul_operation:
+    call inputnums
+    mov eax, ebx
+    imul esi
+    call output_result
+    jmp choice
+
+div_operation:
+    call inputnums 
+    cmp esi, 0 
+    je math_error 
+    mov eax, ebx
+    xor edx, edx 
+    div esi 
+    mov ecx, edx
+
+    mov edx, offset arr10 
+    call WriteString
+    call WriteInt 
+
+    mov edx, offset ar 
+    call WriteString
+    mov edx, offset arr10 
+    call WriteString
+    mov eax, ecx 
+    call WriteInt 
+    call crlf 
+    jmp choice
+
+square_operation:
+    call inputnums_simple 
+    mov eax, ebx          
+    imul eax, eax           
+    call output_result    
+    jmp choice
+
+cube_operation:
+    call inputnums_simple   
+    mov eax, ebx           
+    imul eax, eax           
+    imul eax, ebx          
+    call output_result     
+    jmp choice
+
+square_root_operation:
+    mov edx, offset arr6    
+    call WriteString
+    call ReadInt            
+    cmp eax, 0             
+    je handle_zero          
+    cmp eax, 1             
+    je handle_one           
+    js handle_negative     
+    mov ebx, eax            
+    mov ecx, eax            
+    shr ecx, 1            
+    cmp ecx, 0              
+    jne square_root_loop
+    mov ecx, 1            
+
+square_root_loop:
+    mov eax, ebx            
+    cdq                    
+    div ecx                 
+    add eax, ecx            
+    shr eax, 1              
+    cmp eax, ecx            
+    je square_root_done     
+    mov ecx, eax            
+    jmp square_root_loop   
+
+square_root_done:
+    mov eax, ecx           
+    call output_result     
+    jmp choice            
+
+handle_zero:
+    mov eax, 0              
+    call output_result
+    jmp choice
+
+handle_one:
+    mov eax, 1              
+    call output_result
+    jmp choice
+
+handle_negative:
+    mov edx, offset arr23   
+    call WriteString
+    jmp choice
+
+and_operation:
+    call inputlogical        
+    and ebx, esi             
+    mov eax, ebx             
+    call CustomWriteBin    
+    call crlf              
+    jmp choice              
+
+or_operation:
+    call inputlogical            
+    or ebx, esi                  
+    mov eax, ebx                
+    call CustomWriteBin          
+    call crlf                   
+    jmp choice                  
+
+xor_operation:
+    call inputlogical            
+    xor ebx, esi                 
+    mov eax, ebx                 
+    call CustomWriteBin         
+    call crlf                   
+    jmp choice                   
+
+sin_operation:
+    call inputfloat         
+    fld DWORD PTR deg_to_rad
+    fmul                    
+    fsin                     
+    call output_float        
+    jmp choice               
+
+cos_operation:
+    call inputfloat         
+    fld DWORD PTR deg_to_rad 
+    fmul                     
+    fcos                     
+    call output_float       
+    jmp choice               
+
+tan_operation: 
+    call inputfloat          
+    fld DWORD PTR deg_to_rad 
+    fmul                    
+    fsin                    
+    fld ST(0)
+    
+    fld DWORD PTR deg_to_rad 
+    fmul                     
+    fcos                     
+    fld ST(1)
+    fdiv                    
+    call output_float       
+    jmp choice              
+
+log_operation:
+    call inputfloat               
+    fld st(0)                      
+    fyl2x                         
+    fld DWORD PTR ln10             
+    fdiv                           
+    call output_float              
+    jmp choice                   
+
+ln_operation:
+    ;ln x = 2.303 log x 
+    call inputfloat              
+    fld st(0)                   
+    fld DWORD PTR log10_const 
+    fyl2x                        
+    fmul                          
+    call output_float           
+    jmp choice                   
+
+math_error:
+    mov edx, offset arr23
+    call WriteString
+    jmp choice
+
+terminate:
+    ret
+
+invalid_choice:
+    mov edx, offset arr9
+    call WriteString
+    jmp choice
+
+inputnums PROC
+    mov edx, offset arr6
+    call WriteString
+    call ReadInt
+    mov ebx, eax
+    mov edx, offset arr6
+    call WriteString
+    call ReadInt
+    mov esi, eax
+    ret
+inputnums ENDP
+
+inputnums_simple PROC
+    mov edx, offset arr6    
+    call WriteString
+    call ReadInt            
+    mov ebx, eax            
+    ret
+inputnums_simple ENDP
+
+inputlogical PROC
+    mov edx, offset arr6        
+    call WriteString
+logical_prompt1:
+    call ReadInt                
+    mov ecx, eax               
+validate_binary1:
+    cmp ecx, 0                
+    je valid_input1
+    cmp ecx, 1                 
+    je valid_input1
+    shr ecx, 1                 
+    jnz validate_binary1
+valid_input1:
+    mov ebx, eax               
+    mov edx, offset arr6       
+    call WriteString
+logical_prompt2:
+    call ReadInt                
+    mov ecx, eax                
+validate_binary2:
+    cmp ecx, 0                 
+    je valid_input2
+    cmp ecx, 1                 
+    je valid_input2
+    shr ecx, 1                 
+    jnz validate_binary2
+valid_input2:
+    mov esi, eax              
+    ret
+inputlogical ENDP
+
+inputfloat PROC
+    mov edx, offset arr6
+    call WriteString
+    call ReadFloat
+    ret
+inputfloat ENDP
+
+output_result PROC
+    mov edx, offset arr10
+    call WriteString
+    call WriteInt
+    call CRLF
+    ret
+output_result ENDP
+
+output_float PROC
+    mov edx, offset arr10
+    call WriteString
+    call WriteFloat
+    call CRLF
+    ret
+output_float ENDP
+
+CustomWriteBin PROC
+    lea edi, binaryBuffer       
+    mov ecx, 8                   
+    add edi, 8                   
+    mov byte ptr [edi], 0       
+
+CustomWriteBinLoop:
+    dec edi                      
+    test eax, 1                 
+    jz ZeroBit                  
+    mov byte ptr [edi], '1'     
+    jmp NextBit
+ZeroBit:
+    mov byte ptr [edi], '0'     
+NextBit:
+    shr eax, 1                   
+    loop CustomWriteBinLoop     
+    mov edx, edi                
+    call WriteString            
+    ret
+CustomWriteBin ENDP
+
+exit
+main endp
+END main
